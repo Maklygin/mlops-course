@@ -1,0 +1,31 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.4.0
+  hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-case-conflict
+      - id: mixed-line-ending
+      # - id: flake8
+      #   args: ["--ignore", "E501,W503"]
+
+
+# - repo: https://github.com/pycqa/isort
+#   rev: 5.11.2
+#   hooks:
+#       - id: isort
+
+- repo: https://github.com/psf/black
+  rev: 22.3.0
+  hooks:
+      - id: black
+
+- repo: https://github.com/pycqa/flake8
+  rev: 6.1.0
+  hooks:
+      - id: flake8
+        args: ["--ignore", "E501,W503"]
+#   additional_dependencies: ['toml']
