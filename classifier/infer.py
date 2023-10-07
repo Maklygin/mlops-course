@@ -1,11 +1,12 @@
-import torch
-from trainer import CNNRunner
-import torchvision
 import os
-import torch.nn as nn
-from torchvision import transforms
+
 import numpy as np
 import pandas as pd
+import torch
+import torch.nn as nn
+import torchvision
+from torchvision import transforms
+from trainer import CNNRunner
 
 
 class Flatten(nn.Module):

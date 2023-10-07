@@ -1,11 +1,12 @@
-from collections import defaultdict
-from tqdm import tqdm
-import torch
 import time
-import torch.nn as nn
+from collections import defaultdict
+
 import numpy as np
-from sklearn.metrics import f1_score, accuracy_score
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.metrics import accuracy_score, f1_score
+from tqdm import tqdm
 
 
 class Runner:

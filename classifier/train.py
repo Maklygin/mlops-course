@@ -1,10 +1,11 @@
-import wget
-import zipfile
-import torch
-from torchvision import transforms
-import torchvision
-import torch.nn as nn
 import os
+import zipfile
+
+import torch
+import torch.nn as nn
+import torchvision
+import wget
+from torchvision import transforms
 from trainer import CNNRunner
 
 
