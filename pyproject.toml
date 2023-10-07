@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "mlops-course"
+version = "0.1.0"
+description = ""
+authors = ["m.maklygin <m.maklygin@tinkoff.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "<3.13,>=3.9"
+pre-commit = "^3.4.0"
+torch = "^2.1.0"
+wget = "^3.2"
+torchvision = "^0.16.0"
+numpy = "^1.26.0"
+tqdm = "^4.66.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
