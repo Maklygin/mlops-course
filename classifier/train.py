@@ -11,6 +11,7 @@ import numpy as np
 import time
 from collections import defaultdict
 from tqdm.auto import tqdm
+from sklearn.metrics import f1_score, accuracy_score
 
 import os
 
@@ -20,7 +21,7 @@ def download_data() -> None:
 
     with zipfile.ZipFile('dataset/data.zip', 'r') as zip_ref:
         zip_ref.extractall('dataset')
-
+        
 class Runner():
     """Runner for experiments with supervised model."""
     def __init__(self, model, opt, device, checkpoint_name=None):
@@ -144,10 +145,54 @@ class Runner():
         
         if output_log:
             self.output_log(**kwargs)
-
-
-from sklearn.metrics import f1_score, accuracy_score
-
+    
+    def train(self, train_loader, val_loader, n_epochs, model=None, opt=None, **kwargs):
+        """
+        Training process method, that runs for n_epochs over train_loader and performs validation using val_loader.
+        
+        Args:
+            train_loader (DataLoader): training set data loader to iterate over
+            val_loader (DataLoader): validation set data loader to iterate over
+            n_epochs (int): epoch number to train for
+            model (Model): torch nn.Module or nested class, that implements the model. Overwrites self.model.
+            opt (Optimizer): torch optimizer to be used for loss minimization. Overwrites self.opt.
+            **kwargs: additional parameters to pass to self.validate.
+        """
+        self.opt = (opt or self.opt)
+        self.model = (model or self.model)
+        
+        for _epoch in range(n_epochs):
+            start_time = time.time()
+            self.epoch += 1
+            print(f"epoch {self.epoch:3d}/{n_epochs:3d} started")
+            
+            # training part
+            self._set_events()
+            self._phase_name = 'train'
+            self._run_epoch(train_loader, train_phase=True)
+            
+            print(f"epoch {self.epoch:3d}/{n_epochs:3d} took {time.time() - start_time:.2f}s")
+            
+            # validation part
+            self._phase_name = 'val'
+            self.validate(val_loader, **kwargs)
+            self.save_checkpoint()
+    
+    @torch.no_grad() # we do not need to save gradients during validation
+    def validate(self, loader, model=None, phase_name='val', **kwargs):
+        """
+        Validation process method, that estimates the performance of self.model on validation data in loader.
+        
+        Args:
+            loader (DataLoader): validation set data loader to iterate over
+            model (Model): torch nn.Module or nested class, that implements the model. Overwrites self.model.
+            opt (Optimizer): torch optimizer to be used for loss minimization. Overwrites self.opt.
+            **kwargs: additional parameters to pass to self.validate.
+        """
+        self._phase_name = phase_name
+        self._reset_events(phase_name)
+        self._run_epoch(loader, train_phase=False, output_log=True, **kwargs)
+        return self.metrics
 
 class CNNRunner(Runner):
     def run_criterion(self, batch):
@@ -208,63 +253,11 @@ class CNNRunner(Runner):
         print(' | '.join([f'{k}: {v:.4f}' for k, v in self.metrics.items()]))
         
         self.save_checkpoint() 
-        
 
 class Flatten(nn.Module):
     def forward(self, x):
         # finally we have it in pytorch
         return torch.flatten(x, start_dim=1)
-
-    
-    def train(self, train_loader, val_loader, n_epochs, model=None, opt=None, **kwargs):
-        """
-        Training process method, that runs for n_epochs over train_loader and performs validation using val_loader.
-        
-        Args:
-            train_loader (DataLoader): training set data loader to iterate over
-            val_loader (DataLoader): validation set data loader to iterate over
-            n_epochs (int): epoch number to train for
-            model (Model): torch nn.Module or nested class, that implements the model. Overwrites self.model.
-            opt (Optimizer): torch optimizer to be used for loss minimization. Overwrites self.opt.
-            **kwargs: additional parameters to pass to self.validate.
-        """
-        self.opt = (opt or self.opt)
-        self.model = (model or self.model)
-        
-        for _epoch in range(n_epochs):
-            start_time = time.time()
-            self.epoch += 1
-            print(f"epoch {self.epoch:3d}/{n_epochs:3d} started")
-            
-            # training part
-            self._set_events()
-            self._phase_name = 'train'
-            self._run_epoch(train_loader, train_phase=True)
-            
-            print(f"epoch {self.epoch:3d}/{n_epochs:3d} took {time.time() - start_time:.2f}s")
-            
-            # validation part
-            self._phase_name = 'val'
-            self.validate(val_loader, **kwargs)
-            self.save_checkpoint()
-    
-    @torch.no_grad() # we do not need to save gradients during validation
-    def validate(self, loader, model=None, phase_name='val', **kwargs):
-        """
-        Validation process method, that estimates the performance of self.model on validation data in loader.
-        
-        Args:
-            loader (DataLoader): validation set data loader to iterate over
-            model (Model): torch nn.Module or nested class, that implements the model. Overwrites self.model.
-            opt (Optimizer): torch optimizer to be used for loss minimization. Overwrites self.opt.
-            **kwargs: additional parameters to pass to self.validate.
-        """
-        self._phase_name = phase_name
-        self._reset_events(phase_name)
-        self._run_epoch(loader, train_phase=False, output_log=True, **kwargs)
-        return self.metrics
-
-
 
 
 if __name__ == '__main__':
