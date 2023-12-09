@@ -1,20 +1,11 @@
 import os
-import zipfile
 
 import torch
 import torch.nn as nn
 import torchvision
-import wget
 from torchvision import transforms
 from trainer import CNNRunner
-
-
-def download_data() -> None:
-    url = "https://www.dropbox.com/s/gqdo90vhli893e0/data.zip?dl=1"
-    wget.download(url, out="dataset")
-
-    with zipfile.ZipFile("dataset/data.zip", "r") as zip_ref:
-        zip_ref.extractall("dataset")
+from utils import get_dataset_from_dvc_and_unpuck
 
 
 class Flatten(nn.Module):
@@ -24,12 +15,13 @@ class Flatten(nn.Module):
 
 
 if __name__ == "__main__":
-    download_data()
+
+    get_dataset_from_dvc_and_unpuck()
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Path to a directory with image dataset and subfolders for training, validation and final testing
-    DATA_PATH = r"dataset"
+    DATA_PATH = r"data"
     NUM_WORKERS = 4
     SIZE_H = SIZE_W = 96
     NUM_CLASSES = 2
@@ -58,10 +50,7 @@ if __name__ == "__main__":
     val_dataset = torchvision.datasets.ImageFolder(
         os.path.join(DATA_PATH, "val"), transform=transformer
     )
-    test_dataset = torchvision.datasets.ImageFolder(
-        os.path.join(DATA_PATH, "test_labeled"), transform=transformer
-    )
-    n_train, n_val, n_test = len(train_dataset), len(val_dataset), len(test_dataset)
+    n_train, n_val = len(train_dataset), len(val_dataset)
 
     train_batch_gen = torch.utils.data.DataLoader(
         train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS
