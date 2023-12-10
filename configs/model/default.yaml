@@ -1,0 +1,2 @@
+embedding_size: 128
+ckpt_name: models/model_base.ckpt

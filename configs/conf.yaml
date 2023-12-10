@@ -1,0 +1,5 @@
+defaults:
+  - data: default
+  - model: default
+  - train: default
+  - _self_

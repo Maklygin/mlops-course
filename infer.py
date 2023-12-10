@@ -1,12 +1,15 @@
 import os
 
+import hydra
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torchvision
+from omegaconf import DictConfig
 from torchvision import transforms
-from trainer import CNNRunner
+
+from classifier.trainer import CNNRunner
 
 
 class Flatten(nn.Module):
@@ -15,26 +18,20 @@ class Flatten(nn.Module):
         return torch.flatten(x, start_dim=1)
 
 
-if __name__ == "__main__":
-    ckpt_name = "models/model_base.ckpt"
-    with open(ckpt_name, "rb") as f:
-        best_model = torch.load(f)
+@hydra.main(config_path="configs", config_name="conf.yaml", version_base="1.3")
+def main(cfg: DictConfig) -> None:
 
-    DATA_PATH = r"dataset"
-    NUM_WORKERS = 4
-    SIZE_H = SIZE_W = 96
-    NUM_CLASSES = 2
-    EPOCH_NUM = 30
-    BATCH_SIZE = 256
+    with open(cfg.model.ckpt_name, "rb") as f:
+        best_model = torch.load(f)
 
     image_mean = [0.485, 0.456, 0.406]
     image_std = [0.229, 0.224, 0.225]
 
-    EMBEDDING_SIZE = 128
-
     transformer = transforms.Compose(
         [
-            transforms.Resize((SIZE_H, SIZE_W)),  # scaling images to fixed size
+            transforms.Resize(
+                (cfg.data.size_h, cfg.data.size_w)
+            ),  # scaling images to fixed size
             transforms.ToTensor(),  # converting to tensors
             transforms.Normalize(
                 image_mean, image_std
@@ -43,18 +40,22 @@ if __name__ == "__main__":
     )
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    runner = CNNRunner(best_model, None, device, ckpt_name)
+    runner = CNNRunner(best_model, None, device, cfg.model.ckpt_name)
     test_dataset = torchvision.datasets.ImageFolder(
-        os.path.join(DATA_PATH, "test_labeled"), transform=transformer
+        os.path.join(cfg.data.data_path, cfg.data.test_path), transform=transformer
     )
 
     test_batch_gen = torch.utils.data.DataLoader(
-        test_dataset, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS
+        test_dataset, batch_size=cfg.train.batch_size, num_workers=cfg.train.num_workers
     )
 
-    test_stats = runner.validate(test_batch_gen, best_model, phase_name="test")
+    runner.validate(test_batch_gen, best_model, phase_name="test")
     scores = runner.get_scores()
 
     pd.DataFrame(data={"class": np.int32(scores > 0.5)}).to_csv(
-        "dataset/preds.csv", index=False
+        cfg.data.preds_path, index=False
     )
+
+
+if __name__ == "__main__":
+    main()

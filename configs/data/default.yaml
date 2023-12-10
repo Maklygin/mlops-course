@@ -1,0 +1,10 @@
+data_path: data
+num_classes: 2
+size_h: 96
+size_w: ${data.size_h}
+
+train_path: train_11k
+eval_path: val
+test_path: test_labeled
+
+preds_path: dataset/preds.csv
